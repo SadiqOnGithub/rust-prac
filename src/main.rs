@@ -6,10 +6,13 @@ fn main() {
     key_value.insert("key3", 34);
 
     key_value.entry("key1").or_insert(1);
-    key_value.entry("key2").or_insert(1);
+    let result2 = dbg!(key_value.entry("key2").or_insert(1));
+    dbg!(*result2 += 1);
+    dbg!(result2);
 
-    let result = key_value.entry("key3").or_insert(1);
+    let result = dbg!(key_value.entry("key3").or_insert(1));
     dbg!(*result += 1);
     dbg!(result);
+
     println!("{:?}", key_value);
 }
