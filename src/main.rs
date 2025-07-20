@@ -1,7 +1,10 @@
-// use prac_rs::sum;
-mod lib;
+use prac_rs::sum;
+// use task::my_task;
+mod task;
 
 fn main() {
-    let result = lib::sum(2, 2);
+    let result = sum(2, 2);
     println!("The sum is: {}", result);
+    task::my_task();
+    // my_task();
 }
