@@ -1,6 +1,7 @@
+mod task;
+
 use prac_rs::sum;
 use task::my_task;
-// mod task;
 
 fn main() {
     let result = sum(2, 2);
