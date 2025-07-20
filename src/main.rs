@@ -1,18 +1,7 @@
-use std::collections::HashMap;
+use prac_rs::sum;
+// mod lib;
 
 fn main() {
-    let mut key_value = HashMap::new();
-    key_value.insert("key1", 10);
-    key_value.insert("key3", 34);
-
-    key_value.entry("key1").or_insert(1);
-    let result2 = dbg!(key_value.entry("key2").or_insert(1));
-    dbg!(*result2 += 1);
-    dbg!(result2);
-
-    let result = dbg!(key_value.entry("key3").or_insert(1));
-    dbg!(*result += 1);
-    dbg!(result);
-
-    println!("{:?}", key_value);
+    let result = sum(2, 2);
+    println!("The sum is: {}", result);
 }
