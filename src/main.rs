@@ -1,44 +1,44 @@
-// Attributes are metadata that tell the compiler what to do
-
-// 1. Built-in derive attributes
-#[derive(Debug)] // Compiler generates debug printing code
-struct Point {
-    x: i32,
-    y: i32,
-}
-
-// This is equivalent to manually writing:
-// impl std::fmt::Debug for Point {
-//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//         write!(f, "Point {{ x: {}, y: {} }}", self.x, self.y)
-//     }
-// }
-
-// 2. Multiple derives
-#[derive(Debug, Clone, PartialEq)] // Generate 3 different implementations
-struct Person {
-    name: String,
-}
-
-// 3. Custom attributes (like clap's)
 use clap::Parser;
 
-#[derive(Parser)] // This tells clap's macro to generate parsing code
-struct Config {
-    #[arg(short)] // This tells clap: "make this available as -n"
-    name: String,
+// These attributes are just configuration data for clap:
+
+#[derive(Parser)]
+#[command(name = "git")] // Sets program_name = "git"
+#[command(about = "Version control")] // Sets description = "Version control"
+#[command(version = "1.0")] // Sets version = "1.0"
+struct Cli {
+    #[arg(short, long)]
+    file: String,
 }
 
-// What clap actually does:
-// 1. Reads your struct definition
-// 2. Looks at the #[arg(...)] attributes
-// 3. Generates a ton of parsing code based on those attributes
-// 4. Creates methods like parse(), try_parse(), etc.
+// This is roughly equivalent to configuring clap manually like this:
+//
+// let app = Command::new("git")
+//     .about("Version control")
+//     .version("1.0")
+//     .arg(Arg::new("file")
+//         .short('f')
+//         .long("file")
+//         .required(true));
+
+// The attributes are just a convenient way to write configuration
+// instead of using the builder pattern
 
 fn main() {
-    let p = Point { x: 1, y: 2 };
-    println!("{:?}", p); // This works because of #[derive(Debug)]
+    let cli = Cli::parse();
 
-    let config = Config::parse(); // This works because of #[derive(Parser)]
-    println!("Name: {}", config.name);
+    // When someone runs: your_program --help
+    // They'll see:
+    //
+    // git 1.0
+    // Version control
+    //
+    // Usage: git [OPTIONS] --file <FILE>
+    //
+    // Options:
+    //   -f, --file <FILE>
+    //   -h, --help         Print help information
+    //   -V, --version      Print version information
+
+    println!("Processing file: {}", cli.file);
 }
