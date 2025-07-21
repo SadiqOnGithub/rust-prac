@@ -1,43 +1,44 @@
+// Attributes are metadata that tell the compiler what to do
+
+// 1. Built-in derive attributes
+#[derive(Debug)] // Compiler generates debug printing code
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// This is equivalent to manually writing:
+// impl std::fmt::Debug for Point {
+//     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+//         write!(f, "Point {{ x: {}, y: {} }}", self.x, self.y)
+//     }
+// }
+
+// 2. Multiple derives
+#[derive(Debug, Clone, PartialEq)] // Generate 3 different implementations
+struct Person {
+    name: String,
+}
+
+// 3. Custom attributes (like clap's)
 use clap::Parser;
 
-// When you write this:
-#[derive(Parser)]
-struct Cli {
-    #[arg(short, long)]
+#[derive(Parser)] // This tells clap's macro to generate parsing code
+struct Config {
+    #[arg(short)] // This tells clap: "make this available as -n"
     name: String,
-
-    #[arg(short, long)]
-    age: u32,
 }
 
-// Clap's #[derive(Parser)] generates code similar to this:
-impl Cli {
-    fn parse() -> Self {
-        let args: Vec<String> = std::env::args().collect();
-
-        // All that painful manual parsing we wrote above
-        // gets generated automatically here!
-
-        let mut name = String::new();
-        let mut age = 0u32;
-
-        // ... (imagine all the parsing logic here)
-
-        Cli { name, age }
-    }
-
-    fn parse_from<I, T>(args: I) -> Self
-    where
-        I: IntoIterator<Item = T>,
-        T: Into<std::ffi::OsString> + Clone,
-    {
-        // Even more complex parsing logic
-        unimplemented!("This is just for illustration")
-    }
-}
+// What clap actually does:
+// 1. Reads your struct definition
+// 2. Looks at the #[arg(...)] attributes
+// 3. Generates a ton of parsing code based on those attributes
+// 4. Creates methods like parse(), try_parse(), etc.
 
 fn main() {
-    // This one line replaces all our manual parsing!
-    let cli = Cli::parse();
-    println!("Hello {}, you are {} years old!", cli.name, cli.age);
+    let p = Point { x: 1, y: 2 };
+    println!("{:?}", p); // This works because of #[derive(Debug)]
+
+    let config = Config::parse(); // This works because of #[derive(Parser)]
+    println!("Name: {}", config.name);
 }
