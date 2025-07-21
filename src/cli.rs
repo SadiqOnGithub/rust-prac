@@ -1,10 +1,31 @@
-use clap::Parser;
+use clap::{Parser, Subcommand};
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-#[command(name = "myapp")] // <- "When showing help, call this program 'myapp'"
-#[command(about = "A simple example program")] // <- "Show this description in --help"
+#[derive(Parser)]
+#[command(name = "git")]
+#[command(about = "A fictional versioning CLI")]
 pub struct Cli {
-    #[arg(short, long)]
-    pub name: String,
+    #[command(subcommand)]
+    pub command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    /// Adds files to the repository
+    Add {
+        /// Files to add
+        #[arg(required = true)]
+        files: Vec<String>,
+    },
+    /// Commits changes
+    Commit {
+        /// Commit message
+        #[arg(short, long)]
+        message: String,
+
+        /// All tracked files
+        #[arg(short, long)]
+        all: bool,
+    },
+    /// Shows the status
+    Status,
 }
