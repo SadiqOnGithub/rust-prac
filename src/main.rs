@@ -5,7 +5,8 @@ mod cli;
 mod task;
 
 fn main() {
-    let cli = cli::Cli::parse();
+    let cli = dbg!(cli::Cli::parse());
+
     println!("Hello, {}!", cli.name);
 
     let result = sum(2, 2);
