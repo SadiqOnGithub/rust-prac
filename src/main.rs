@@ -1,58 +1,43 @@
-use std::env;
+use clap::Parser;
+
+// When you write this:
+#[derive(Parser)]
+struct Cli {
+    #[arg(short, long)]
+    name: String,
+
+    #[arg(short, long)]
+    age: u32,
+}
+
+// Clap's #[derive(Parser)] generates code similar to this:
+impl Cli {
+    fn parse() -> Self {
+        let args: Vec<String> = std::env::args().collect();
+
+        // All that painful manual parsing we wrote above
+        // gets generated automatically here!
+
+        let mut name = String::new();
+        let mut age = 0u32;
+
+        // ... (imagine all the parsing logic here)
+
+        Cli { name, age }
+    }
+
+    fn parse_from<I, T>(args: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<std::ffi::OsString> + Clone,
+    {
+        // Even more complex parsing logic
+        unimplemented!("This is just for illustration")
+    }
+}
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    println!("Raw arguments: {:?}", args);
-
-    // Manual parsing - this is painful!
-    let mut name = String::new();
-    let mut age = 0u32;
-
-    let mut i = 1; // Skip program name at index 0
-    while i < args.len() {
-        dbg!(i);
-        dbg!(args[i].as_str());
-        match args[i].as_str() {
-            "--name" | "-n" => {
-                if i + 1 < args.len() {
-                    name = args[i + 1].clone();
-                    i += 2; // Skip the value
-                } else {
-                    eprintln!("Error: --name requires a value");
-                    return;
-                }
-            }
-            "--age" | "-a" => {
-                if i + 1 < args.len() {
-                    match args[i + 1].parse::<u32>() {
-                        Ok(parsed_age) => age = parsed_age,
-                        Err(_) => {
-                            eprintln!("Error: age must be a number");
-                            return;
-                        }
-                    }
-                    i += 2;
-                } else {
-                    eprintln!("Error: --age requires a value");
-                    return;
-                }
-            }
-            "--help" | "-h" => {
-                println!("Usage: myprogram --name <NAME> --age <AGE>");
-                return;
-            }
-            _ => {
-                eprintln!("Unknown argument: {}", args[i]);
-                return;
-            }
-        }
-    }
-
-    if name.is_empty() {
-        eprintln!("Error: --name is required");
-        return;
-    }
-
-    println!("Hello {}, you are {} years old!", name, age);
+    // This one line replaces all our manual parsing!
+    let cli = Cli::parse();
+    println!("Hello {}, you are {} years old!", cli.name, cli.age);
 }
