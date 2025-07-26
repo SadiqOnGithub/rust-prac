@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
+use std::fmt::Debug;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(name = "git")]
 #[command(about = "A fictional versioning CLI")]
 pub struct Cli {
@@ -8,10 +9,12 @@ pub struct Cli {
     pub command: Option<Commands>,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Adds files to the repository
     Add {
+        #[clap(short, long, default_value_t = true)]
+        recursive: bool,
         /// Files to add
         #[arg(required = true)]
         files: Vec<String>,

@@ -1,19 +1,23 @@
+mod cli;
+
+use clap::Parser;
+use cli::{Cli, Commands};
+
 fn main() {
-    // let mystery = vec![1, 2, 3].iter().map(|x| x * 2);
-    // let _: () = mystery; // Compiler will tell you the real type!
+    let args = Cli::parse();
 
-    // Can't print iterators directly
-    let iter = vec![1, 2, 3]
-        .into_iter()
-        .map(|x| x * 2)
-        .filter(|x| *x > 3)
-        .skip(1)
-        // .next()
-        // .unwrap()
-        ;
-    println!("{:?}", iter); // ✗ Error!
+    dbg!(&args);
+    dbg!(&args.command);
 
-    // Collect first
-    // let collected: Vec<i32> = iter.collect();
-    // println!("{:?}", collected); // ✓ Works! [2, 4, 6]
+    match &args.command {
+        Some(Commands::Add {
+            files: _,
+            recursive: _,
+        }) => {
+            println!("Adding a new item");
+        }
+        _ => {
+            println!("Invalid command");
+        }
+    }
 }
