@@ -13,117 +13,219 @@ pub enum Status {
     Done,
 }
 
-// Main CLI struct with global options
+// Enhanced CLI struct with global options
 #[derive(Parser)]
 #[command(name = "task-tracker")]
-#[command(about = "A simple task tracker CLI")]
+#[command(about = "A comprehensive task tracker CLI")]
 #[command(version = "1.0")]
-#[command(author = "Your Name")]
-#[command(long_about = "A comprehensive task tracking CLI tool with status management")]
+#[command(author = "Your Name <your.email@example.com>")]
+#[command(
+    long_about = "A simple yet powerful task tracking CLI tool with status management and filtering capabilities"
+)]
 pub struct Cli {
-    /// Enable verbose output
+    /// Enable verbose output for debugging
     #[arg(short, long, global = true)]
     pub verbose: bool,
 
-    /// Custom data file path
+    /// Custom data file path (default: tasks.json)
     #[arg(short, long, global = true, value_name = "FILE")]
     pub file: Option<String>,
+
+    /// Show additional timestamps and metadata
+    #[arg(long, global = true)]
+    pub show_metadata: bool,
 
     #[command(subcommand)]
     pub command: Command,
 }
 
-// Your EXACT Command enum structure with comprehensive validation
+// Enhanced Command enum with comprehensive validation
 #[derive(Subcommand)]
 pub enum Command {
     /// Add a new task with description
     #[command(alias = "a")]
-    Add(
-        /// Task description (must not be empty)
+    #[command(
+        long_about = "Create a new task with the given description. The description cannot be empty and will be trimmed of whitespace."
+    )]
+    Add {
+        /// Task description (2-200 characters, cannot be empty)
         #[arg(
             value_name = "DESCRIPTION",
             help = "Description of the task to add",
-            long_help = "The description of the task. Cannot be empty and should be meaningful.",
-            value_parser = validate_non_empty_string
+            long_help = "The description of the task. Must be between 2-200 characters and cannot be empty or just whitespace.",
+            value_parser = validate_description
         )]
-        String,
-    ),
+        description: String,
 
-    /// Update an existing task's description
+        /// Set initial priority (1-5, where 5 is highest)
+        #[arg(short, long, value_parser = validate_priority)]
+        priority: Option<u8>,
+
+        /// Add tags to the task (comma-separated)
+        #[arg(short, long, value_delimiter = ',')]
+        tags: Vec<String>,
+    },
+
+    /// Update an existing task's description and properties
     #[command(alias = "u")]
-    Update(
-        /// Task ID to update (must be positive)
+    #[command(
+        long_about = "Update an existing task's description. Both the task ID must exist and the new description must be valid."
+    )]
+    Update {
+        /// Task ID to update (must be a positive integer)
         #[arg(
             value_name = "ID",
             help = "ID of the task to update",
+            long_help = "The unique identifier of the task to update. Must be a positive integer.",
             value_parser = validate_task_id
         )]
-        TaskId,
-        /// New task description (must not be empty)
+        id: TaskId,
+
+        /// New task description (2-200 characters)
         #[arg(
             value_name = "DESCRIPTION",
             help = "New description for the task",
-            value_parser = validate_non_empty_string
+            long_help = "The new description for the task. Must be between 2-200 characters.",
+            value_parser = validate_description
         )]
-        String,
-    ),
+        description: String,
+
+        /// Update priority (1-5, where 5 is highest)
+        #[arg(short, long, value_parser = validate_priority)]
+        priority: Option<u8>,
+    },
 
     /// Delete a task permanently
     #[command(alias = "d")]
-    Delete(
-        /// Task ID to delete (must be positive)
+    #[command(
+        long_about = "Permanently delete a task. This action cannot be undone. Use with caution."
+    )]
+    Delete {
+        /// Task ID to delete (must be a positive integer)
         #[arg(
             value_name = "ID",
             help = "ID of the task to delete",
-            long_help = "The ID of the task to permanently delete. This action cannot be undone.",
+            long_help = "The unique identifier of the task to permanently delete. This action cannot be undone.",
             value_parser = validate_task_id
         )]
-        TaskId,
-    ),
+        id: TaskId,
+
+        /// Force deletion without confirmation
+        #[arg(short, long)]
+        force: bool,
+    },
 
     /// Mark task as in progress
     #[command(name = "mark-in-progress", alias = "wip")]
-    MarkInProgress(
-        /// Task ID to mark (must be positive)
+    #[command(
+        long_about = "Mark a task as currently in progress. This indicates active work on the task."
+    )]
+    MarkInProgress {
+        /// Task ID to mark (must be a positive integer)
         #[arg(
             value_name = "ID",
             help = "ID of the task to mark as in progress",
             value_parser = validate_task_id
         )]
-        TaskId,
-    ),
+        id: TaskId,
+
+        /// Add a note about the progress
+        #[arg(short, long)]
+        note: Option<String>,
+    },
 
     /// Mark task as completed
     #[command(name = "mark-done", alias = "done")]
-    MarkDone(
-        /// Task ID to mark (must be positive)
+    #[command(
+        long_about = "Mark a task as completed. This indicates the task has been finished successfully."
+    )]
+    MarkDone {
+        /// Task ID to mark (must be a positive integer)
         #[arg(
             value_name = "ID",
             help = "ID of the task to mark as done",
             value_parser = validate_task_id
         )]
-        TaskId,
-    ),
+        id: TaskId,
 
-    /// List tasks with optional filtering
+        /// Add completion notes
+        #[arg(short, long)]
+        note: Option<String>,
+    },
+
+    /// List tasks with filtering and sorting options
     #[command(alias = "ls")]
-    List(
-        /// Filter by status (optional)
+    #[command(
+        long_about = "List tasks with various filtering and sorting options. By default shows all tasks."
+    )]
+    List {
+        /// Filter by status (todo, in-progress, done)
         #[arg(
             value_enum,
             value_name = "STATUS",
             help = "Filter tasks by status",
-            long_help = "Filter tasks by their current status. If not provided, shows all tasks."
+            long_help = "Filter tasks by their current status. Available options: todo, in-progress, done"
         )]
-        Option<Status>,
-    ),
+        status: Option<Status>,
+
+        /// Sort by field (id, description, status, priority)
+        #[arg(long, value_enum)]
+        sort_by: Option<SortField>,
+
+        /// Reverse sort order
+        #[arg(long)]
+        reverse: bool,
+
+        /// Limit number of results
+        #[arg(short, long, value_parser = validate_limit)]
+        limit: Option<usize>,
+
+        /// Show only tasks with specific tags
+        #[arg(long, value_delimiter = ',')]
+        tags: Vec<String>,
+    },
+
+    /// Search tasks by description content
+    #[command(alias = "find")]
+    Search {
+        /// Search query (case-insensitive)
+        #[arg(
+            value_name = "QUERY",
+            help = "Search term to find in task descriptions",
+            value_parser = validate_search_query
+        )]
+        query: String,
+
+        /// Use regex pattern matching
+        #[arg(long)]
+        regex: bool,
+
+        /// Case-sensitive search
+        #[arg(long)]
+        case_sensitive: bool,
+    },
+}
+
+// Additional enum for sorting
+#[derive(Debug, Clone, ValueEnum)]
+pub enum SortField {
+    #[value(name = "id")]
+    Id,
+    #[value(name = "description")]
+    Description,
+    #[value(name = "status")]
+    Status,
+    #[value(name = "priority")]
+    Priority,
 }
 
 // Custom validation functions
-fn validate_non_empty_string(s: &str) -> Result<String, String> {
+fn validate_description(s: &str) -> Result<String, String> {
     let trimmed = s.trim();
     if trimmed.is_empty() {
         Err("Description cannot be empty".to_string())
+    } else if trimmed.len() < 2 {
+        Err("Description must be at least 2 characters long".to_string())
     } else if trimmed.len() > 200 {
         Err("Description too long (max 200 characters)".to_string())
     } else {
@@ -139,7 +241,34 @@ fn validate_task_id(s: &str) -> Result<TaskId, String> {
     }
 }
 
-// Enhanced main function with validation feedback
+fn validate_priority(s: &str) -> Result<u8, String> {
+    match s.parse::<u8>() {
+        Ok(p) if (1..=5).contains(&p) => Ok(p),
+        Ok(_) => Err("Priority must be between 1 and 5".to_string()),
+        Err(_) => Err("Priority must be a valid number".to_string()),
+    }
+}
+
+fn validate_limit(s: &str) -> Result<usize, String> {
+    match s.parse::<usize>() {
+        Ok(l) if l > 0 => Ok(l),
+        Ok(_) => Err("Limit must be greater than 0".to_string()),
+        Err(_) => Err("Limit must be a valid number".to_string()),
+    }
+}
+
+fn validate_search_query(s: &str) -> Result<String, String> {
+    let trimmed = s.trim();
+    if trimmed.is_empty() {
+        Err("Search query cannot be empty".to_string())
+    } else if trimmed.len() < 2 {
+        Err("Search query must be at least 2 characters".to_string())
+    } else {
+        Ok(trimmed.to_string())
+    }
+}
+
+// Enhanced main function with comprehensive handling
 fn main() {
     let cli = Cli::parse();
 
@@ -147,71 +276,51 @@ fn main() {
     // let mut store = Store::new(cli.file.as_deref());
 
     if cli.verbose {
-        println!("Running in verbose mode...");
+        println!("🔧 Running in verbose mode...");
         if let Some(ref file) = cli.file {
-            println!("Using custom data file: {}", file);
+            println!("📁 Using custom data file: {}", file);
+        }
+        if cli.show_metadata {
+            println!("📊 Metadata display enabled");
         }
     }
-
-    // Your existing match logic works EXACTLY the same!
-    // But now all inputs are pre-validated by clap
-    // match cli.command {
-    //     Command::Add(description) => {
-    //         // description is guaranteed to be non-empty and <= 200 chars
-    //         let new_id = store.add_task(description);
-    //         println!("Added new task with ID {new_id}");
-    //         if cli.verbose {
-    //             println!("Task added successfully to store");
-    //         }
-    //     }
-    //     Command::Delete(id) => {
-    //         // id is guaranteed to be > 0
-    //         store.delete_task(id);
-    //         if cli.verbose {
-    //             println!("Attempted to delete task with ID {}", id);
-    //         }
-    //     }
-    //     Command::Update(id, description) => {
-    //         // Both id and description are pre-validated
-    //         store.update_task(id, description);
-    //         if cli.verbose {
-    //             println!("Updated task {} with new description", id);
-    //         }
-    //     }
-    //     Command::MarkInProgress(id) => {
-    //         store.mark_task(id, Status::InProgress);
-    //         if cli.verbose {
-    //             println!("Marked task {} as in progress", id);
-    //         }
-    //     }
-    //     Command::MarkDone(id) => {
-    //         store.mark_task(id, Status::Done);
-    //         if cli.verbose {
-    //             println!("Marked task {} as done", id);
-    //         }
-    //     }
-    //     Command::List(status) => {
-    //         let result = store.list_tasks(status);
-    //         if cli.verbose {
-    //             let filter_msg = match status {
-    //                 Some(s) => format!("Listing tasks with status: {:?}", s),
-    //                 None => "Listing all tasks".to_string(),
-    //             };
-    //             println!("{}", filter_msg);
-    //         }
-
-    //         for item in result {
-    //             println!(
-    //                 "ID {0}: {1}. Status: {2}",
-    //                 item.id(),
-    //                 item.description(),
-    //                 item.status()
-    //             );
-    //         }
-    //     }
-    // }
 }
 
-// Add this to your Cargo.toml:
-// [dependencies]
-// clap = { version = "4.0", features = ["derive"] }
+/*
+Enhanced usage examples:
+
+Basic commands:
+$ ./task-tracker add "Buy groceries"
+$ ./task-tracker add "Study Rust" --priority 5 --tags work,learning
+$ ./task-tracker update 1 "Buy organic groceries" --priority 3
+$ ./task-tracker delete 1 --force
+$ ./task-tracker mark-in-progress 2 --note "Started shopping"
+$ ./task-tracker mark-done 2 --note "All items purchased"
+
+Advanced listing:
+$ ./task-tracker list --status todo --sort-by priority --reverse
+$ ./task-tracker list --limit 10 --tags work
+$ ./task-tracker ls --status done  # Using alias
+
+Search:
+$ ./task-tracker search "groceries" --case-sensitive
+$ ./task-tracker find "rust.*learning" --regex
+
+Global options:
+$ ./task-tracker --verbose --file custom.json list
+$ ./task-tracker --show-metadata list
+
+Aliases:
+$ ./task-tracker a "New task"     # add
+$ ./task-tracker u 1 "Updated"   # update
+$ ./task-tracker d 1 --force     # delete
+$ ./task-tracker wip 1           # mark-in-progress
+$ ./task-tracker done 1          # mark-done
+$ ./task-tracker ls              # list
+$ ./task-tracker find "query"   # search
+
+Help:
+$ ./task-tracker --help
+$ ./task-tracker add --help
+$ ./task-tracker list --help
+*/
